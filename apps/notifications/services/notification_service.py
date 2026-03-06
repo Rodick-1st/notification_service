@@ -1,5 +1,5 @@
-from .models import Notification, NotificationChannel
-from .enums import ChannelType
+from apps.notifications.models import Notification, NotificationChannel
+from apps.notifications.tasks.send_notification import send_notification
 
 
 class NotificationService:
@@ -17,7 +17,6 @@ class NotificationService:
         channel_objects = []
 
         for channel in channels:
-
             channel_objects.append(
                 NotificationChannel(
                     notification=notification,
@@ -26,5 +25,8 @@ class NotificationService:
             )
 
         NotificationChannel.objects.bulk_create(channel_objects)
+
+        # отправляем задачу в Celery
+        send_notification.delay(notification.id)
 
         return notification

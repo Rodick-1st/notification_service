@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import Notification, NotificationChannel
 from .enums import ChannelType
-from .services import NotificationService
+from apps.notifications.services.notification_service import NotificationService
 
 
 class NotificationCreateSerializer(serializers.Serializer):
@@ -25,12 +25,17 @@ class NotificationChannelSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = NotificationChannel
-        fields = '__all__'
+        fields = (
+            "id",
+            "channel_type",
+            "status",
+            "sent_at",
+        )
 
 
 class NotificationListSerializer(serializers.ModelSerializer):
 
-    channels = NotificationChannelSerializer(many=True)
+    channels = NotificationChannelSerializer(many=True,read_only=True)
 
     class Meta:
         model = Notification

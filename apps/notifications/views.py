@@ -5,7 +5,6 @@ from .models import Notification
 from .serializers import NotificationCreateSerializer, NotificationListSerializer
 
 
-
 class NotificationListCreateView(ListCreateAPIView):
 
     permission_classes = [IsAuthenticated]
