@@ -13,6 +13,7 @@ class NotificationListCreateView(ListCreateAPIView):
         return (
             Notification.objects
             .filter(user=self.request.user, is_deleted=False)
+            .prefetch_related("channels")
             .order_by("-created_at")
         )
 

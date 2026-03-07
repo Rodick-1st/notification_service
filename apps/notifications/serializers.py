@@ -11,7 +11,7 @@ class NotificationCreateSerializer(serializers.Serializer):
     scheduled_at = serializers.DateTimeField(required=False)
     channels = serializers.ListField(
         child=serializers.ChoiceField(choices=ChannelType.choices),
-        allow_empty=False
+        allow_empty=False, write_only=True
     )
 
     def create(self, validated_data):
