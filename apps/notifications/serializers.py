@@ -8,7 +8,7 @@ class NotificationCreateSerializer(serializers.Serializer):
 
     title = serializers.CharField(max_length=255)
     message = serializers.CharField()
-    scheduled_at = serializers.DateTimeField(required=False)
+    scheduled_at = serializers.DateTimeField(required=False, allow_null=True)
     channels = serializers.ListField(
         child=serializers.ChoiceField(choices=ChannelType.choices),
         allow_empty=False, write_only=True

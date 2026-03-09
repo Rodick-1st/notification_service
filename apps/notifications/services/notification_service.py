@@ -1,5 +1,6 @@
 from apps.notifications.models import Notification, NotificationChannel
 from apps.notifications.tasks.send_notification import send_notification
+from django.utils import timezone
 
 
 class NotificationService:
@@ -26,7 +27,12 @@ class NotificationService:
 
         NotificationChannel.objects.bulk_create(channel_objects)
 
-        # отправляем задачу в Celery
-        send_notification.delay(notification.id)
+        scheduled_at = notification.scheduled_at
+
+        # отправляем задачу в Celery (с учётом scheduled_at)
+        if scheduled_at and scheduled_at > timezone.now():
+            send_notification.apply_async(args=[notification.id], eta=scheduled_at)
+        else:
+            send_notification.delay(notification.id)
 
         return notification
