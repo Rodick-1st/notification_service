@@ -3,6 +3,23 @@ from django.contrib.auth.models import User
 from .enums import ChannelType, ChannelStatus
 
 
+class NotificationTemplate(models.Model):
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="notification_templates",
+    )
+
+    name = models.CharField(max_length=255)
+    title_template = models.CharField(max_length=255)
+    message_template = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.user.username})"
+
+
 class Notification(models.Model):
 
     user = models.ForeignKey(

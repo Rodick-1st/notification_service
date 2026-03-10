@@ -1,8 +1,16 @@
-from rest_framework.generics import ListCreateAPIView, DestroyAPIView
+from rest_framework.generics import (
+    ListCreateAPIView,
+    DestroyAPIView,
+    RetrieveUpdateDestroyAPIView,
+)
 from rest_framework.permissions import IsAuthenticated
 
-from .models import Notification
-from .serializers import NotificationCreateSerializer, NotificationListSerializer
+from .models import Notification, NotificationTemplate
+from .serializers import (
+    NotificationCreateSerializer,
+    NotificationListSerializer,
+    NotificationTemplateSerializer,
+)
 
 
 class NotificationListCreateView(ListCreateAPIView):
@@ -30,3 +38,24 @@ class NotificationDeleteView(DestroyAPIView):
     def perform_destroy(self, instance):
         instance.is_deleted = True
         instance.save(update_fields=["is_deleted"])
+
+
+class NotificationTemplateListCreateView(ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationTemplateSerializer
+
+    def get_queryset(self):
+        return NotificationTemplate.objects.filter(user=self.request.user).order_by(
+            "-created_at"
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class NotificationTemplateDetailView(RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationTemplateSerializer
+
+    def get_queryset(self):
+        return NotificationTemplate.objects.filter(user=self.request.user)
