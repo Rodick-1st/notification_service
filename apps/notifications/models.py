@@ -84,3 +84,21 @@ class DeliveryAttempt(models.Model):
     response = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class NotificationAttachment(models.Model):
+    notification = models.ForeignKey(
+        Notification,
+        on_delete=models.CASCADE,
+        related_name="attachments",
+    )
+
+    file = models.FileField(upload_to="notification_attachments/")
+    filename = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=128, blank=True)
+    size = models.IntegerField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"Attachment {self.filename} for notification {self.notification_id}"

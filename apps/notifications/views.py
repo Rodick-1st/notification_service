@@ -1,11 +1,11 @@
 from rest_framework.generics import (
     ListCreateAPIView,
+    CreateAPIView,
     DestroyAPIView,
     RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
 import hashlib
 import json
@@ -15,7 +15,9 @@ from .serializers import (
     NotificationCreateSerializer,
     NotificationListSerializer,
     NotificationTemplateSerializer,
+    NotificationAttachmentSerializer,
 )
+from django.shortcuts import get_object_or_404
 
 
 class NotificationListCreateView(ListCreateAPIView):
@@ -107,3 +109,22 @@ class NotificationTemplateDetailView(RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return NotificationTemplate.objects.filter(user=self.request.user)
+
+
+class NotificationAttachmentCreateView(CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationAttachmentSerializer
+
+    def get_notification(self) -> Notification:
+        return get_object_or_404(
+            Notification,
+            pk=self.kwargs["pk"],
+            user=self.request.user,
+            is_deleted=False,
+        )
+
+    def perform_create(self, serializer):
+        notification = self.get_notification()
+        serializer.context["notification"] = notification
+        serializer.save()
+

@@ -4,6 +4,7 @@ from .views import (
     NotificationDeleteView,
     NotificationTemplateListCreateView,
     NotificationTemplateDetailView,
+    NotificationAttachmentCreateView,
 )
 
 
@@ -12,4 +13,5 @@ urlpatterns = [
     path("<int:pk>/", NotificationDeleteView.as_view()),
     path("templates/", NotificationTemplateListCreateView.as_view()),
     path("templates/<int:pk>/", NotificationTemplateDetailView.as_view()),
+    path("<int:pk>/attachments/", NotificationAttachmentCreateView.as_view()),
 ]

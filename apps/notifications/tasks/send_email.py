@@ -17,11 +17,14 @@ def send_email(self, notification_channel_id: int):
     # считаем каждую попытку отправки
     channel.attempts_count += 1
 
+    attachments = channel.notification.attachments.all()
+
     try:
         provider.send(
             to_email=channel.notification.user.email,
             subject=channel.notification.title,
             message=channel.notification.message,
+            attachments=attachments,
         )
 
         channel.status = ChannelStatus.SENT
