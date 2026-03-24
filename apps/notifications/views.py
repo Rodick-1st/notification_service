@@ -1,12 +1,13 @@
 from rest_framework.generics import (
     ListCreateAPIView,
-    CreateAPIView,
     DestroyAPIView,
     RetrieveUpdateDestroyAPIView,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 import hashlib
 import json
 
@@ -15,7 +16,6 @@ from .serializers import (
     NotificationCreateSerializer,
     NotificationListSerializer,
     NotificationTemplateSerializer,
-    NotificationAttachmentSerializer,
 )
 from django.shortcuts import get_object_or_404
 
@@ -79,6 +79,18 @@ class NotificationListCreateView(ListCreateAPIView):
         return response
 
 
+@extend_schema(
+    parameters=[
+        OpenApiParameter(
+            name="permanent",
+            type=OpenApiTypes.STR,
+            location=OpenApiParameter.QUERY,
+            required=False,
+            description="Выберите `true` чтобы безвозвратно удалить уведомление. Default is soft delete.",
+            enum=["true"],
+        )
+    ]
+)
 class NotificationDeleteView(DestroyAPIView):
     permission_classes = [IsAuthenticated]
 
@@ -86,8 +98,11 @@ class NotificationDeleteView(DestroyAPIView):
         return Notification.objects.filter(user=self.request.user, is_deleted=False)
 
     def perform_destroy(self, instance):
-        instance.is_deleted = True
-        instance.save(update_fields=["is_deleted"])
+        if self.request.query_params.get("permanent") == "true":
+            instance.delete()
+        else:
+            instance.is_deleted = True
+            instance.save(update_fields=["is_deleted"])
 
 
 class NotificationTemplateListCreateView(ListCreateAPIView):
@@ -111,20 +126,4 @@ class NotificationTemplateDetailView(RetrieveUpdateDestroyAPIView):
         return NotificationTemplate.objects.filter(user=self.request.user)
 
 
-class NotificationAttachmentCreateView(CreateAPIView):
-    permission_classes = [IsAuthenticated]
-    serializer_class = NotificationAttachmentSerializer
-
-    def get_notification(self) -> Notification:
-        return get_object_or_404(
-            Notification,
-            pk=self.kwargs["pk"],
-            user=self.request.user,
-            is_deleted=False,
-        )
-
-    def perform_create(self, serializer):
-        notification = self.get_notification()
-        serializer.context["notification"] = notification
-        serializer.save()
 

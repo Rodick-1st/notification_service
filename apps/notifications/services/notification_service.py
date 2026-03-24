@@ -1,7 +1,8 @@
 import re
 import time
+import mimetypes
 
-from apps.notifications.models import Notification, NotificationChannel, NotificationTemplate
+from apps.notifications.models import Notification, NotificationChannel, NotificationTemplate, NotificationAttachment
 from apps.notifications.tasks.send_notification import send_notification
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
@@ -40,6 +41,7 @@ class NotificationService:
         channels = data.pop("channels")
         template_id = data.pop("template_id", None)
         context = data.pop("context", None) or {}
+        files = data.pop("files", [])
 
         NotificationService._check_rate_limits(user_id=user.id, channels=channels)
 
@@ -71,6 +73,16 @@ class NotificationService:
             )
 
         NotificationChannel.objects.bulk_create(channel_objects)
+
+        for f in files:
+            content_type = getattr(f, "content_type", None) or mimetypes.guess_type(f.name)[0] or ""
+            NotificationAttachment.objects.create(
+                notification=notification,
+                file=f,
+                filename=f.name,
+                content_type=content_type,
+                size=f.size,
+            )
 
         scheduled_at = notification.scheduled_at
 
