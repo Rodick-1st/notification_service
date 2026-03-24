@@ -90,7 +90,7 @@ DATABASES = {
         "NAME": os.getenv("POSTGRES_DB"),
         "USER": os.getenv("POSTGRES_USER"),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
-        "HOST": os.getenv("POSTGRES_HOST"),    ### 'host.docker.internal', os.getenv("POSTGRES_HOST"),
+        "HOST": os.getenv("POSTGRES_HOST"),   ### 'host.docker.internal', os.getenv("POSTGRES_HOST"),
         "PORT": os.getenv("POSTGRES_PORT"),
     }
 }
@@ -161,7 +161,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 
-CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://localhost:6379/0")
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -185,3 +185,26 @@ EMAIL_ADMIN = EMAIL_HOST_USER
 
 # Telegram settings
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+
+
+# Rate limiting (Redis)
+REDIS_URL = os.getenv("REDIS_URL", CELERY_BROKER_URL)
+NOTIFICATIONS_RATE_LIMIT_PER_MINUTE = int(
+    os.getenv("NOTIFICATIONS_RATE_LIMIT_PER_MINUTE", "10")
+)
+NOTIFICATIONS_RATE_LIMIT_PER_MINUTE_PER_CHANNEL = int(
+    os.getenv("NOTIFICATIONS_RATE_LIMIT_PER_MINUTE_PER_CHANNEL", "5")
+)
+
+
+# Media (для MVP: вложения email)
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+NOTIFICATION_ATTACHMENT_MAX_BYTES = int(
+    os.getenv("NOTIFICATION_ATTACHMENT_MAX_BYTES", str(10 * 1024 * 1024))
+)
+NOTIFICATION_ATTACHMENT_ALLOWED_CONTENT_TYPES = os.getenv(
+    "NOTIFICATION_ATTACHMENT_ALLOWED_CONTENT_TYPES",
+    "application/pdf,image/png,image/jpeg,text/plain",
+)
