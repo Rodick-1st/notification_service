@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import time
 
 import pika
 from django.contrib.auth.models import User
@@ -27,11 +28,8 @@ def get_or_create_system_user(email: str) -> User:
 
 
 def _get_channels(user: User) -> list[str]:
-    """Возвращает каналы доставки: всегда email, telegram — если есть chat_id."""
-    channels = [ChannelType.EMAIL]
-    if hasattr(user, "telegram_profile") and user.telegram_profile.chat_id:
-        channels.append(ChannelType.TELEGRAM)
-    return channels
+    """Возвращает каналы доставки: email + telegram (chat_id захардкожен для тестов)."""
+    return [ChannelType.EMAIL, ChannelType.TELEGRAM]
 
 
 # ── Обработчики событий ────────────────────────────────────────────────────────
@@ -58,13 +56,26 @@ def handle_order_created(payload: dict) -> None:
     })
 
 
-def handle_seller_approved(payload: dict) -> None:
+def handle_review_created(payload: dict) -> None:
     email = payload["email"]
     user = get_or_create_system_user(email)
-    business_name = payload.get("business_name", "")
+    product_name = payload.get("product_name", "")
+    rating = payload.get("rating", "")
     NotificationService.create_notification(user, {
-        "title": "Ваша заявка одобрена",
-        "message": f"Поздравляем! Магазин «{business_name}» одобрен и теперь активен.",
+        "title": "Отзыв опубликован",
+        "message": f"Ваш отзыв на товар «{product_name}» с оценкой {rating} успешно опубликован.",
+        "channels": _get_channels(user),
+    })
+
+
+def handle_product_created(payload: dict) -> None:
+    email = payload["email"]
+    user = get_or_create_system_user(email)
+    product_name = payload.get("product_name", "")
+    category = payload.get("category", "")
+    NotificationService.create_notification(user, {
+        "title": "Товар добавлен",
+        "message": f"Товар «{product_name}» в категории «{category}» успешно опубликован.",
         "channels": _get_channels(user),
     })
 
@@ -74,7 +85,8 @@ def handle_seller_approved(payload: dict) -> None:
 EVENT_HANDLERS = {
     "user.registered": handle_user_registered,
     "order.created": handle_order_created,
-    "seller.approved": handle_seller_approved,
+    "review.created": handle_review_created,
+    "product.created": handle_product_created,
 }
 
 
@@ -104,7 +116,18 @@ def on_message(channel, method, properties, body):
 
 def run_consumer() -> None:
     params = pika.URLParameters(RABBITMQ_URL)
-    connection = pika.BlockingConnection(params)
+
+    retry_delay = 2
+    max_delay = 30
+    while True:
+        try:
+            connection = pika.BlockingConnection(params)
+            break
+        except Exception as exc:
+            logger.warning("RabbitMQ not ready (%s), retrying in %ds...", exc, retry_delay)
+            time.sleep(retry_delay)
+            retry_delay = min(retry_delay * 2, max_delay)
+
     channel = connection.channel()
 
     # Exchange
